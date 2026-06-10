@@ -249,7 +249,6 @@ class SponsorDataProcessor:
             timestamp = self._get_order_timestamp(order)
 
             return {
-                "user_id": user_id,
                 "name": name,
                 "avatar": avatar,
                 "timestamp": timestamp,
