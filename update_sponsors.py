@@ -1,15 +1,10 @@
-"""
-爱发电赞助者数据同步脚本 - 简化版(仅显示头像+昵称)
-
-从爱发电 API 获取赞助者和订单信息,生成 Markdown 格式的赞助者列表并更新到 README 文件中。
-同时生成 JSON 格式的数据文件供其他应用使用。
-"""
 import hashlib
 import json
 import logging
 import os
 import random
 import time
+import html
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -30,6 +25,7 @@ class Config:
     # 文件配置
     README_FILE: str = "README.md"
     JSON_FILE: str = "sponsor.json"
+    HTML_FILE: str = "docs/index.html"
     MARKER_START: str = "<!-- AFDIAN_SPONSORS_START -->"
     MARKER_END: str = "<!-- AFDIAN_SPONSORS_END -->"
 
@@ -380,6 +376,357 @@ class JsonExporter:
             logger.error(f"生成 JSON 文件失败: {e}")
             raise
 
+# ==================== HTML 页面生成 ====================
+class HtmlExporter:
+    """HTML 赞助者页面生成器"""
+
+    def __init__(self, filepath: str):
+        self.filepath = Path(filepath)
+
+    @staticmethod
+    def _escape(value: Any) -> str:
+        return html.escape(str(value or ""), quote=True)
+
+    def _generate_sponsor_card(self, item: dict[str, Any]) -> str:
+        name = self._escape(item.get("name") or "匿名赞助者")
+        avatar = self._escape(item.get("avatar") or "")
+        time_text = self._escape(item.get("time") or "")
+
+        if avatar:
+            avatar_html = (
+                f'<img src="{avatar}" alt="{name}" loading="lazy" '
+                f'referrerpolicy="no-referrer">'
+            )
+        else:
+            avatar_html = f'<div class="avatar-fallback">{name[:1]}</div>'
+
+        return f"""
+        <article class="sponsor-card">
+          <div class="avatar">
+            {avatar_html}
+          </div>
+          <div class="sponsor-info">
+            <h3>{name}</h3>
+            <p>{time_text}</p>
+          </div>
+        </article>
+        """
+
+    def generate(self, data: dict[str, Any]) -> str:
+        update_time = self._escape(data.get("update_time") or "-")
+        total_count = int(data.get("total_count") or 0)
+        sponsors = data.get("sponsors") or []
+
+        cards = "\n".join(
+            self._generate_sponsor_card(item)
+            for item in sponsors
+        )
+
+        if not cards:
+            cards = """
+            <div class="empty">
+              <h3>暂无赞助者</h3>
+              <p>感谢每一位未来支持 Lyrico 的朋友。</p>
+            </div>
+            """
+
+        return f"""<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lyrico Sponsors</title>
+  <meta name="description" content="感谢所有支持 Lyrico 的赞助者">
+  <style>
+    :root {{
+      --bg: #eef7ff;
+      --bg-2: #f7fbff;
+      --card: rgba(255, 255, 255, 0.74);
+      --text: #102033;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-2: #38bdf8;
+      --border: rgba(37, 99, 235, 0.18);
+      --shadow: 0 20px 60px rgba(15, 76, 129, 0.14);
+    }}
+
+    * {{
+      box-sizing: border-box;
+    }}
+
+    body {{
+      margin: 0;
+      min-height: 100vh;
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.24), transparent 28rem),
+        radial-gradient(circle at 82% 8%, rgba(37, 99, 235, 0.20), transparent 30rem),
+        linear-gradient(135deg, var(--bg), var(--bg-2));
+    }}
+
+    .page {{
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 56px 0 48px;
+    }}
+
+    .hero {{
+      position: relative;
+      overflow: hidden;
+      padding: 56px;
+      border: 1px solid var(--border);
+      border-radius: 36px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.84), rgba(255,255,255,0.52));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+    }}
+
+    .hero::after {{
+      content: "";
+      position: absolute;
+      right: -100px;
+      top: -100px;
+      width: 260px;
+      height: 260px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      opacity: 0.18;
+    }}
+
+    .badge {{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      color: #1d4ed8;
+      background: rgba(37, 99, 235, 0.12);
+      font-weight: 700;
+      font-size: 14px;
+    }}
+
+    h1 {{
+      max-width: 760px;
+      margin: 22px 0 16px;
+      font-size: clamp(42px, 7vw, 78px);
+      line-height: 0.96;
+      letter-spacing: -0.06em;
+    }}
+
+    .hero-text {{
+      max-width: 640px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.8;
+    }}
+
+    .stats {{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 32px;
+      max-width: 520px;
+    }}
+
+    .stat {{
+      padding: 20px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.62);
+    }}
+
+    .stat strong {{
+      display: block;
+      font-size: 30px;
+      line-height: 1;
+    }}
+
+    .stat span {{
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }}
+
+    .section-title {{
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 42px 0 18px;
+    }}
+
+    .section-title h2 {{
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+    }}
+
+    .section-title p {{
+      margin: 0;
+      color: var(--muted);
+    }}
+
+    .grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 18px;
+    }}
+
+    .sponsor-card {{
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      min-height: 104px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      background: var(--card);
+      box-shadow: 0 12px 34px rgba(15, 76, 129, 0.08);
+      backdrop-filter: blur(18px);
+      transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+    }}
+
+    .sponsor-card:hover {{
+      transform: translateY(-4px);
+      border-color: rgba(37, 99, 235, 0.34);
+      box-shadow: 0 20px 48px rgba(15, 76, 129, 0.14);
+    }}
+
+    .avatar {{
+      width: 58px;
+      height: 58px;
+      flex: 0 0 58px;
+      border-radius: 20px;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(56, 189, 248, 0.22));
+    }}
+
+    .avatar img {{
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }}
+
+    .avatar-fallback {{
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      color: #1d4ed8;
+      font-weight: 800;
+      font-size: 22px;
+    }}
+
+    .sponsor-info h3 {{
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.35;
+    }}
+
+    .sponsor-info p {{
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }}
+
+    .empty {{
+      padding: 40px;
+      border-radius: 28px;
+      border: 1px dashed var(--border);
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.45);
+      grid-column: 1 / -1;
+    }}
+
+    .footer {{
+      margin-top: 48px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+    }}
+
+    @media (max-width: 720px) {{
+      .page {{
+        width: min(100% - 20px, 1120px);
+        padding-top: 24px;
+      }}
+
+      .hero {{
+        padding: 32px 24px;
+        border-radius: 28px;
+      }}
+
+      .stats {{
+        grid-template-columns: 1fr;
+      }}
+
+      .section-title {{
+        display: block;
+      }}
+
+      .section-title p {{
+        margin-top: 8px;
+      }}
+    }}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="badge">❤️ Lyrico Sponsors</div>
+      <h1>感谢每一位支持者</h1>
+      <p class="hero-text">
+        你们的支持让 Lyrico 能够持续改进。这里记录所有通过爱发电支持项目的朋友。
+      </p>
+
+      <div class="stats">
+        <div class="stat">
+          <strong>{total_count}</strong>
+          <span>累计赞助者</span>
+        </div>
+        <div class="stat">
+          <strong>UTC+8</strong>
+          <span>更新时间：{update_time}</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>赞助者列表</h2>
+        <p>按最近赞助时间排序</p>
+      </div>
+
+      <div class="grid">
+        {cards}
+      </div>
+    </section>
+
+    <footer class="footer">
+      Generated from sponsor.json · Powered by GitHub Actions
+    </footer>
+  </main>
+</body>
+</html>
+"""
+
+    def export(self, data: dict[str, Any]) -> None:
+        try:
+            self.filepath.parent.mkdir(parents=True, exist_ok=True)
+            self.filepath.write_text(self.generate(data), encoding="utf-8")
+            logger.info(f"已生成 HTML 页面: {self.filepath}")
+        except Exception as e:
+            logger.error(f"生成 HTML 页面失败: {e}")
+            raise
+
 
 # ==================== 主函数 ====================
 def main() -> None:
@@ -424,15 +771,20 @@ def main() -> None:
         logger.info(f"已更新 README 文件")
     except Exception as e:
         logger.error(f"更新 README 失败: {e}")
-
-    # 生成 JSON 文件
+    # 生成 JSON 文件和 HTML 页面
     try:
         json_data = processor.generate_json_data()
-        exporter = JsonExporter(config.JSON_FILE)
-        exporter.export(json_data)
+
+        json_exporter = JsonExporter(config.JSON_FILE)
+        json_exporter.export(json_data)
+
+        html_exporter = HtmlExporter(config.HTML_FILE)
+        html_exporter.export(json_data)
+
         logger.info(f"脚本完成,共处理 {len(orders)} 条订单")
     except Exception as e:
-        logger.error(f"生成 JSON 文件失败: {e}")
+        logger.error(f"生成输出文件失败: {e}")
+        raise
 
 
 if __name__ == "__main__":
