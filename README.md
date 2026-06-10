@@ -1,6 +1,3 @@
-## 📱网页版
-https://proify.github.io/sponsor
-
 <!-- AFDIAN_SPONSORS_START -->
 ## ❤️ 赞助者列表
 
