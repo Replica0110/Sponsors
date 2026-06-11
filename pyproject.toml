@@ -1,0 +1,18 @@
+[project]
+name = "sponsors"
+version = "0.1.0"
+description = "爱发电赞助者名单生成工具"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "certifi>=2026.5.20",
+    "charset-normalizer>=3.4.7",
+    "colorama>=0.4.6",
+    "colorlog>=6.10.1",
+    "docopt>=0.6.2",
+    "idna>=3.18",
+    "pipreqs>=0.5.0",
+    "requests>=2.33.0",
+    "urllib3>=2.7.0",
+    "yarg==0.1.9",
+]
