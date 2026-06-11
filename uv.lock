@@ -745,7 +745,7 @@ requires-dist = [
     { name = "pipreqs", specifier = ">=0.5.0" },
     { name = "requests", specifier = ">=2.33.0" },
     { name = "urllib3", specifier = ">=2.7.0" },
-    { name = "yarg", specifier = ">=0.1.9" },
+    { name = "yarg", specifier = "==0.1.9" },
 ]
 
 [[package]]
