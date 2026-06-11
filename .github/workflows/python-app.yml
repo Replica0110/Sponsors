@@ -30,9 +30,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ -f uv.lock ]; then
-            uv sync --locked
-          elif [ -f pyproject.toml ]; then
+          if [ -f pyproject.toml ]; then
             uv sync
           else
             uv venv --python 3.14
