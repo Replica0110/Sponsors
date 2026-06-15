@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [ "master" ]
   schedule:
-    - cron: "0 */4 * * *"  # 每四小时运行一次
+    - cron: "15 0,12 * * *"  # 北京时间每天 08:15 / 20:15
   workflow_dispatch:
 
 permissions:
@@ -33,7 +33,7 @@ jobs:
           if [ -f pyproject.toml ]; then
             uv sync
           else
-            uv venv --python 3.14
+            uv venv --python 3.13
           fi
 
       - name: Run update_sponsors.py
