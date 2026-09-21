@@ -269,7 +269,7 @@ class SponsorDataProcessor:
         lines = [
             "## ❤️ 赞助者列表",
             "",
-            f"> 更新时间: {update_time} (UTC+8) 每4小时更新一次",
+            f"> 更新时间: {update_time} (UTC+8) 每12小时更新一次",
             "",
             "| 头像 | 昵称 |",
             "|------|------|",
@@ -398,29 +398,30 @@ class HtmlExporter:
             self._template_cache = self.template_path.read_text(encoding="utf-8")
         return self._template_cache
 
-    def _generate_sponsor_card(self, item: dict[str, Any]) -> str:
+    def _generate_sponsor_card(self, item: dict[str, Any], index: int) -> str:
         name = self._escape(item.get("name") or "匿名赞助者")
         avatar = self._escape(item.get("avatar") or "")
         time_text = self._escape(item.get("time") or "")
+        date_text = self._escape((item.get("time") or "-").split(" ", 1)[0])
+        time_datetime = self._escape((item.get("time") or "").replace(" ", "T"))
 
         if avatar:
             avatar_html = (
-                f'<img src="{avatar}" alt="{name}" loading="lazy" '
+                f'<img src="{avatar}" alt="" loading="lazy" '
                 f'referrerpolicy="no-referrer">'
             )
         else:
             avatar_html = f'<div class="avatar-fallback">{name[:1]}</div>'
 
         return f"""
-        <article class="sponsor-card">
+        <li class="sponsor-row">
+          <span class="sponsor-index" aria-hidden="true">{index:02d}</span>
           <div class="avatar">
             {avatar_html}
           </div>
-          <div class="sponsor-info">
-            <h3>{name}</h3>
-            <p>{time_text}</p>
-          </div>
-        </article>
+          <p class="sponsor-name">{name}</p>
+          <p class="sponsor-date"><time datetime="{time_datetime}">{date_text}</time></p>
+        </li>
         """
 
     def generate(self, data: dict[str, Any]) -> str:
@@ -429,21 +430,23 @@ class HtmlExporter:
         sponsors = data.get("sponsors") or []
 
         cards = "\n".join(
-            self._generate_sponsor_card(item)
-            for item in sponsors
+            self._generate_sponsor_card(item, index)
+            for index, item in enumerate(sponsors, start=1)
         )
 
         if not cards:
             cards = """
-            <div class="empty">
+            <li class="empty">
               <h3>暂无赞助者</h3>
               <p>感谢每一位未来支持 Lyrico 的朋友。</p>
-            </div>
+            </li>
             """
 
         template = self._load_template()
         return template.replace("{{total_count}}", str(total_count)) \
                        .replace("{{update_time}}", update_time) \
+                       .replace("{{update_display_time}}", update_time[:16]) \
+                       .replace("{{update_datetime}}", update_time.replace(" ", "T")) \
                        .replace("{{cards}}", cards)
 
     def export(self, data: dict[str, Any]) -> None:
