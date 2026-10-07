@@ -1,12 +1,12 @@
 <!-- AFDIAN_SPONSORS_START -->
 ## ❤️ 赞助者列表
 
-> 更新时间: 2026-10-07 14:05:22 (UTC+8) 每12小时更新一次
+> 更新时间: 2026-10-08 02:58:02 (UTC+8) 每12小时更新一次
 
 | 头像 | 昵称 |
 |------|------|
 | <img src="https://pic1.afdiancdn.com/user/33d87c3ee86311f0957a5254001e7c00/avatar/c354f183e46633a7117e8ab32d2cf75d_w1080_h1080_s168.jpeg" width="50"> | A7_QuarT3R |
-| <img src="https://pic1.afdiancdn.com/default/avatar/avatar-orange.png" width="50"> | million先森 |
+| <img src="https://pic1.afdiancdn.com/user/6b871a8e6ffb11ed865352540025c377/avatar/8c20b0f618e9ac2a37db79d320a1e4fa_w1280_h1730_s363.jpeg" width="50"> | million先森 |
 | <img src="https://pic1.afdiancdn.com/default/avatar/avatar-purple.png" width="50"> | 爱发电用户_q93U |
 | <img src="https://pic1.afdiancdn.com/default/avatar/avatar-purple.png?imageView2/1/" width="50"> | 爱发电用户_8593b |
 <!-- AFDIAN_SPONSORS_END -->
